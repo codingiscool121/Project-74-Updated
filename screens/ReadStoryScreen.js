@@ -2,9 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View ,FlatList,ScrollView} from 'react-native';
 import {SearchBar} from 'react-native-elements';
 import {Header} from 'react-native-elements';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import db from '../config'
-
+import firebase from 'firebase'
 export default class ReadStoryScreen extends React.Component {
   constructor(){
     super();
@@ -18,9 +17,6 @@ export default class ReadStoryScreen extends React.Component {
     this.retrieveStories()
   }
 
-  updateSearch = search => {
-    this.setState({ search });
-  };
   
   retrieveStories=()=>{
       var allStories= []
@@ -41,7 +37,7 @@ export default class ReadStoryScreen extends React.Component {
       //applying filter for the inserted text in search bar
       const itemData = item.title ? item.title.toUpperCase() : ''.toUpperCase();
       const textData = text.toUpperCase();
-      return itemData.indexOf(textData);
+      return itemData.indexOf(textData)>-1;
     });
     this.setState({
       //setting the filtered newData on datasource
@@ -49,15 +45,6 @@ export default class ReadStoryScreen extends React.Component {
       dataSource: newData,
       search: text,
     });
-  }
-
-  SearchDatabase=async(text)=>{
-  const transaction=await db.collection('stories').where('title',"==", text).get();
-  transaction.docs.map(doc=>{
-    this.setState({
-      allStories:[...this.state.allStories,doc.data()]
-    })
-  })
   }
 
     render(){
@@ -73,49 +60,28 @@ export default class ReadStoryScreen extends React.Component {
           <View styles ={{height:20,width:'100%'}}>
               <SearchBar
               placeholder="Search for a story here..."
-              onChangeText={this.updateSearch}
+              onChangeText={text=>{this.SearchFilterFunction(text)}}
               onClear={text => this.SearchFilterFunction('')}
               value={this.state.search}
             />
             {console.log(this.state.search)}
           </View>
-          <TouchableOpacity onPress={()=>{this.state.SearchDatabase(this.state.search)}}>
-            <Text>Search</Text>
-          </TouchableOpacity>
-          <ScrollView>
-              <View>
-                {
-                  this.state.search === "" ? 
-                    this.state.allStories.map((item)=>(
-                      <View style={{borderColor:'turquoise',borderWidth:2,padding:10,alignItems:'center',margin:30}}>
-                        <Text>
-                          Title : {item.title}
-                        </Text>
-                        <Text>
-                          Author : {item.author}
-                        </Text>
-						<Text>
-							Story: {item.storyText};
-						</Text>
-                      </View>
-                    ))
-                  :
-                  this.state.dataSource.map((item)=>(
-                    <View style={{borderColor:'turquoise',borderWidth:2,padding:20,alignItems:'center',margin:30}}>
-                      <Text>
-                       Title : {item.title}
-                      </Text>
-                      <Text>
-                       Author : {item.author}
-                      </Text>
-					  <Text>
-						  Story: {item.storyText};
-					  </Text>
-                    </View>
-                  ))
-                }
+
+          <FlatList
+            data={
+            this.state.search?this.state.dataSource:this.state.allStories
+            }
+            renderItem={ ({item})=>(
+              <View  style={{borderColor:'turquoise',borderWidth:2,padding:10,alignItems:'center',margin:30}}>
+                <Text>Title:{item.title}</Text>
+                <Text>Author:{item.author}</Text>
+                <Text>Story:{item.storyText}</Text>
               </View>
-          </ScrollView> 
+              
+              )
+            }
+            >
+          </FlatList> 
           
           
           
